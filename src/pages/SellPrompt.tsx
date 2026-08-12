@@ -5,6 +5,7 @@ import {
   TextField,
   TextArea,
   Chip,
+  ChipItem,
   Paragraph,
   Spacing,
   AlertDialog,
@@ -116,16 +117,13 @@ export default function SellPrompt() {
       <Spacing size={12} />
       <Paragraph.Text typography="t6">카테고리</Paragraph.Text>
       <Spacing size={8} />
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+      <Chip kind="select" wrap style={{ flexWrap: "wrap" }}>
         {CATEGORIES.map((cat) => (
-          <Chip
-            key={cat}
-            {...({ selected: category === cat, onClick: () => setCategory(cat) } as Record<string, unknown>)}
-          >
+          <ChipItem key={cat} selected={category === cat} onClick={() => setCategory(cat)}>
             {cat}
-          </Chip>
+          </ChipItem>
         ))}
-      </div>
+      </Chip>
 
       <Spacing size={12} />
       <TextField

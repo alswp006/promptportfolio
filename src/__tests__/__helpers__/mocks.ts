@@ -174,7 +174,14 @@ export function mockTds() {
       { Header: ({ children }: any) => React.createElement("div", null, children) },
     ),
 
-    Chip: ({ children, selected, onClick }: any) =>
+    Chip: ({ children, selected, onClick, ...props }: any) =>
+      React.createElement(
+        "div",
+        { role: "group", ...props },
+        children,
+      ),
+
+    ChipItem: ({ children, selected, onClick }: any) =>
       React.createElement(
         "button",
         { role: "button", "aria-pressed": selected, onClick },
