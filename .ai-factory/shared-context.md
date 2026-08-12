@@ -140,7 +140,7 @@ export type RouteState = {
 
 ### Exports (src/lib/)
 - contract.ts: export type Prompt =; export type PurchaseRecord =; export type SettlementRecord =; export type User =; export type RouteState =; export type usePromptStoreFn = () =>; export type usePurchaseStoreFn = () =>; export type useSettlementStoreFn = () =>
-- storage.ts: export function getItem<T>(key: string): T | null; export function setItem<T>(key: string, value: T): void; export function removeItem(key: string): void
+- storage.ts: export interface SaveResult; export function safeRead<T>(key: string, fallback: T): T; export function safeWrite(key: string, value: unknown): SaveResult
 - types.ts: export type PromptCategory = "마케팅" | "재무" | "PM" | "법무" | "개발" | "디자인" | "HR" | "기타"; export interface Prompt; export interface Purchase; export interface SaleRecord; export type UsedCounts = Record<string, number>; export interface Flags; export type SaveResult =; export type RouteState =
 - utils.ts: export function cn(...classes: (string | boolean | undefined | null)[]): string; export function formatNumber(n: number): string; export function formatCurrency(n: number, currency = 'KRW'): string
 
@@ -163,3 +163,4 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 
 ## Already Implemented (do NOT duplicate or overwrite)
 - 0001: 데이터 모델 & RouteState 타입 정의 (files: src/lib/types.ts)
+- 0002: 저장소 기반 헬퍼 (안전 read/write) (files: src/lib/storage.ts)
