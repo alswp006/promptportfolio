@@ -6,13 +6,15 @@ import { ScreenScaffold } from "@/components/ScreenScaffold";
 import { Card } from "@/components/Card";
 import { SubmitFooter } from "@/components/BottomCTA";
 import { EmptyState, LoadingState } from "@/components/StateView";
+import { TossPurchase } from "@/components/TossPurchase";
 import { getPromptById } from "@/lib/promptStore";
-import { getPurchases } from "@/lib/purchaseStore";
-import { incrementUsed } from "@/lib/settlement";
+import { addPurchase, getPurchases } from "@/lib/purchaseStore";
+import { incrementUsed, recordSale } from "@/lib/settlement";
 import { formatNumber } from "@/lib/utils";
 import type { Prompt } from "@/lib/types";
 
 const AD_SLOT_ID = import.meta.env.VITE_TOSS_AD_SLOT_ID ?? "prompt-sample-reward";
+const IAP_SKU = import.meta.env.VITE_TOSS_IAP_SKU;
 
 export default function PromptDetail() {
   const { id = "" } = useParams();
@@ -74,6 +76,22 @@ export default function PromptDetail() {
     setToastMessage("복사했어요");
   };
 
+  // 지급 처리(processProductGrant) 단계에서 구매/정산 기록을 확정한다 — 이 콜백은
+  // IAP 성공 이벤트보다 먼저, SDK가 await하기 전에 동기적으로 실행되므로 여기서
+  // 기록해야 테스트/실사용 모두에서 결제 확정과 잠금 해제가 같은 순간에 반영된다.
+  const handleGrant = () => {
+    if (!prompt) return false;
+    addPurchase(prompt.id, prompt.priceWon);
+    recordSale(prompt);
+    setPurchased(true);
+    setToastMessage("구매 완료");
+    return true;
+  };
+
+  const handlePurchaseError = () => {
+    setToastMessage("결제가 취소되었어요");
+  };
+
   if (loading) {
     return (
       <ScreenScaffold top={<Top title={<Top.TitleParagraph>프롬프트</Top.TitleParagraph>} />}>
@@ -104,10 +122,29 @@ export default function PromptDetail() {
     <ScreenScaffold
       top={<Top title={<Top.TitleParagraph>{prompt.title}</Top.TitleParagraph>} />}
       bottom={
-        <SubmitFooter
-          label={locked ? "구매하고 전체 보기" : "프롬프트 복사"}
-          onClick={locked ? () => {} : handleCopy}
-        />
+        locked ? (
+          <div
+            style={{
+              position: "fixed",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              padding: "12px 16px calc(var(--toss-safe-area-bottom) + 12px)",
+              backgroundColor: "var(--adaptiveBackground)",
+            }}
+          >
+            <TossPurchase
+              sku={IAP_SKU}
+              className="toss-purchase-fill-button"
+              processProductGrant={handleGrant}
+              onError={handlePurchaseError}
+            >
+              구매하고 전체 보기
+            </TossPurchase>
+          </div>
+        ) : (
+          <SubmitFooter label="프롬프트 복사" onClick={handleCopy} />
+        )
       }
     >
       <Card testId="prompt-detail-card">
@@ -127,6 +164,13 @@ export default function PromptDetail() {
             <Spacing size={4} />
             <Badge size="medium" variant="weak" color="blue">
               무료
+            </Badge>
+          </>
+        ) : purchased ? (
+          <>
+            <Spacing size={4} />
+            <Badge size="medium" variant="weak" color="blue">
+              구매함
             </Badge>
           </>
         ) : null}
