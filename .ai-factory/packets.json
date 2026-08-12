@@ -1,0 +1,409 @@
+[
+  {
+    "id": "0001",
+    "title": "데이터 모델 & RouteState 타입 정의",
+    "epic": "Epic 1. Types",
+    "task": {
+      "description": "앱 전역 엔티티(Prompt, Purchase, SaleRecord)와 보조 타입(PromptCategory 8종 유니온, UsedCounts, Flags), 저장소 헬퍼 반환형 SaveResult 판별 유니온, 페이지 이동 계약 RouteState를 순수 타입으로만 정의한다. import 외 실행 코드 0줄, 런타임 로직 없음.",
+      "acceptance_criteria": [
+        "Prompt(SPEC 12필드 정확히), Purchase, SaleRecord, PromptCategory(8종), Flags, UsedCounts=Record<string,number> export",
+        "SaveResult = { ok:true; id:string } | { ok:false; error:string } 유니온 export",
+        "RouteState = { '/':undefined; '/prompt/:id':undefined; '/sell':undefined; '/dashboard':undefined; '/library':undefined } export",
+        "npx tsc --noEmit 통과, 실행 코드 0줄"
+      ]
+    },
+    "covers": [
+      "전 F 공통 타입 계약"
+    ],
+    "files": [
+      "src/lib/types.ts"
+    ],
+    "definition_of_done": [
+      "모든 인터페이스/유니온 export",
+      "tsc --noEmit 통과"
+    ],
+    "depends_on": [],
+    "db_schema": "interface Prompt { id:string; title:string; category:PromptCategory; jobRole:string; body:string; sampleOutput:string; priceWon:number; sellerId:string; sellerName:string; version:number; usedCount:number; createdAt:number; updatedAt:number } | localStorage keys: pp.prompts, pp.purchases, pp.sales, pp.usedCounts, pp.flags",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": ""
+  },
+  {
+    "id": "0002",
+    "title": "저장소 기반 헬퍼 (안전 read/write)",
+    "epic": "Epic 2. Data Layer",
+    "task": {
+      "description": "모든 store가 통과하는 저수준 헬퍼 safeRead<T>(key, fallback)와 safeWrite(key, value): SaveResult를 구현한다. JSON 파싱 실패와 QuotaExceededError를 반환값으로만 방어하고 console.error를 절대 호출하지 않는다. UI 없는 순수 로직.",
+      "acceptance_criteria": [
+        "safeRead: 값 없음/'{invalid' 등 파싱 실패 시 예외 없이 fallback 반환",
+        "safeWrite: 성공 시 {ok:true}, QuotaExceededError(name==='QuotaExceededError') catch 시 {ok:false,error:'저장 공간이 부족합니다'} 반환, 크래시 없음",
+        "두 함수 내부에서 console.error 호출 0건",
+        "npx tsc --noEmit 통과"
+      ]
+    },
+    "covers": [
+      "F1-AC4",
+      "F1-AC5",
+      "F1-AC7"
+    ],
+    "files": [
+      "src/lib/storage.ts"
+    ],
+    "definition_of_done": [
+      "safeRead/safeWrite export",
+      "손상 JSON·QuotaExceededError 방어 확인",
+      "tsc 통과"
+    ],
+    "depends_on": [
+      "0001"
+    ],
+    "db_schema": "safeRead<T>(key:string, fallback:T):T / safeWrite(key:string, value:unknown):SaveResult",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": ""
+  },
+  {
+    "id": "0003",
+    "title": "프롬프트 store + 시드 데이터",
+    "epic": "Epic 2. Data Layer",
+    "task": {
+      "description": "pp.prompts에 대한 CRUD와 시드 초기화를 구현한다. 카테고리 8종 각 1건 이상, 총 8건 이상의 시드를 제공하고 손상 폴백 후 재초기화 경로를 포함한다. savePrompt는 uuid·version=1·usedCount=0·createdAt===updatedAt을 설정한다.",
+      "acceptance_criteria": [
+        "ensureSeeded(): pp.prompts 비었거나 손상 시 8종 카테고리 각 1건 포함 ≥8건 시드 저장",
+        "getPrompts():Prompt[] 항상 배열, getPromptById(id):Prompt|undefined",
+        "savePrompt(input):SaveResult — crypto.randomUUID() id, version=1, usedCount=0, createdAt===updatedAt 설정 후 1건 추가",
+        "npx tsc --noEmit 통과"
+      ]
+    },
+    "covers": [
+      "F1-AC1",
+      "F1-AC2"
+    ],
+    "files": [
+      "src/lib/promptStore.ts",
+      "src/lib/seed.ts"
+    ],
+    "definition_of_done": [
+      "시드 8건 이상 8종 카테고리",
+      "savePrompt/getPrompts/getPromptById/ensureSeeded export",
+      "tsc 통과"
+    ],
+    "depends_on": [
+      "0002"
+    ],
+    "db_schema": "pp.prompts: Prompt[] (1건≈3.5KB, 500건≈1.75MB)",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": ""
+  },
+  {
+    "id": "0004",
+    "title": "구매·정산·사용횟수 store + 정산 계산",
+    "epic": "Epic 2. Data Layer",
+    "task": {
+      "description": "pp.purchases, pp.sales, pp.usedCounts, pp.flags store와 정산 파생 계산을 구현한다. incrementUsed는 usedCounts 맵과 Prompt.usedCount를 원자적으로 동시 갱신하고, recordSale은 수수료 20% 내림을 반영한다.",
+      "acceptance_criteria": [
+        "getPurchases():Purchase[] 빈 값일 때 [] 반환(null/undefined 아님), addPurchase(promptId, pricePaidWon)",
+        "incrementUsed(id): pp.usedCounts[id] +1 및 해당 Prompt.usedCount +1 동시 갱신",
+        "recordSale(prompt): commissionWon=Math.floor(gross*0.2), netWon=gross-commission SaleRecord 1건 pp.sales 추가",
+        "getSales():SaleRecord[], getFlags()/setOnboardedSeller() 구현, tsc 통과"
+      ]
+    },
+    "covers": [
+      "F1-AC3",
+      "F1-AC6"
+    ],
+    "files": [
+      "src/lib/purchaseStore.ts",
+      "src/lib/settlement.ts"
+    ],
+    "definition_of_done": [
+      "getPurchases/addPurchase/incrementUsed/recordSale/getSales/getFlags/setOnboardedSeller export",
+      "수수료 20% 내림 계산 검증",
+      "tsc 통과"
+    ],
+    "depends_on": [
+      "0003"
+    ],
+    "db_schema": "pp.purchases:Purchase[], pp.sales:SaleRecord[], pp.usedCounts:Record<string,number>, pp.flags:{onboardedSeller?:boolean}",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": ""
+  },
+  {
+    "id": "0005",
+    "title": "마켓 홈 페이지 `/`",
+    "epic": "Epic 3. Pages",
+    "task": {
+      "description": "프롬프트 카드 리스트 + 카테고리 Tab + 검색 + 배너 광고 + 로딩/빈 상태 화면. getPrompts() 로드해 TDS ListRow 카드로 렌더하고, 카테고리/검색 필터, Skeleton, EmptyState를 처리한다. 카드 탭 시 상세로 이동한다.",
+      "acceptance_criteria": [
+        "ListRow 카드에 가격(₩ 또는 '무료' Badge)과 '사용 N회' 표시, 카드 높이 ≥44px",
+        "TDS Tab 카테고리 8종+전체 선택 시 category 일치 항목만 노출",
+        "TextField 검색어가 title 또는 jobRole 부분일치(대소문자 무시) 항목만 표시",
+        "read 완료 전 Skeleton 카드 6개, 결과 0건 시 Asset.ContentIcon+'검색 결과가 없어요'",
+        "AdSlot 배너를 상단 섹션과 리스트 사이 1회 배치, 카드 탭→navigate('/prompt/'+id)"
+      ]
+    },
+    "covers": [
+      "F2-AC1",
+      "F2-AC2",
+      "F2-AC3",
+      "F2-AC4",
+      "F2-AC5",
+      "F2-AC6",
+      "F2-AC7"
+    ],
+    "files": [
+      "src/pages/MarketHome.tsx"
+    ],
+    "definition_of_done": [
+      "카테고리/검색 필터 동작",
+      "Skeleton·EmptyState·AdSlot 배치",
+      "tsc 통과 및 컴파일 성공"
+    ],
+    "depends_on": [
+      "0003"
+    ],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "Pattern: StatusPanel(Tab 필터 + 카드 리스트). Whitelist: Top, TextField, Tab, Tab.Item, Chip, ListRow, ListRow.Texts, Badge, Paragraph, Spacing, Skeleton, EmptyState, AdSlot, FloatingTabBar.\nLayout:\n<Top title={<Top.TitleParagraph>프롬프트 마켓</Top.TitleParagraph>} />\n<Spacing size={12} />\n<TextField variant=\"box\" label=\"검색\" value={q} onChange={setQ} /> (placeholder: 제목·직무 검색)\n<Spacing size={12} />\n<Tab onChange={setCat}> 전체 + 카테고리 8종 (Tab.Item selected)\n<Spacing size={16} />\n<AdSlot adGroupId={import.meta.env.VITE_TOSS_AD_GROUP_ID} /> (섹션 사이 1회)\n<Spacing size={16} />\n카드: <ListRow onClick={()=>navigate(`/prompt/${p.id}`)} contents={<ListRow.Texts type=\"2RowTypeA\" top={p.title} bottom={`${p.jobRole} · 사용 ${p.usedCount}회`} />} right={<Badge>{p.priceWon===0?'무료':`₩${p.priceWon.toLocaleString()}`}</Badge>} />\n<FloatingTabBar active=\"market\" />\nStates: Loading=Skeleton 카드 6개 리스트 미렌더; Empty=<EmptyState title=\"검색 결과가 없어요\" description=\"다른 키워드로 찾아보세요\" />; Error=Paragraph.Text color=secondary '목록을 불러오지 못했어요' + Button weak '다시 시도'.\nInteractions: Tab 탭→category 필터 + generateHapticFeedback({type:'tickWeak'}); 검색→title/jobRole 대소문자 무시 부분일치; 카드 탭→상세, 터치타깃 ≥44px. 색상 var(--tds-color-*)만, HEX 금지."
+  },
+  {
+    "id": "0006",
+    "title": "프롬프트 상세 — 렌더·샘플 광고 게이트·복사",
+    "epic": "Epic 3. Pages",
+    "task": {
+      "description": "/prompt/:id 상세 카드를 렌더하고, 보상형 광고 시청 후 sampleOutput을 공개하며, 본문 복사 시 usedCount를 증가시킨다. 없는 id는 크래시 없이 폴백하고, 유료 미구매 본문은 마스킹한다(구매 실동작은 다음 패킷).",
+      "acceptance_criteria": [
+        "useParams로 id 조회, 없는 id면 크래시 없이 '프롬프트를 찾을 수 없어요'+'마켓으로'(→navigate('/'))",
+        "data-testid='prompt-detail-card' Card에 title·jobRole·v{version}·'사용 {usedCount}회'·가격, data-testid='price-hero' t2~t3 강조",
+        "'샘플 결과 보기'→TossRewardAd 시청 완료 시 sampleOutput 전문 표시, 광고 실패 시 토스트 '광고를 불러오지 못했어요'+가림 유지",
+        "priceWon>0&미구매 시 body 마스킹+'구매하고 전체 보기' 버튼(다음 패킷 연결), 무료/구매 시 '프롬프트 복사'→클립보드+'복사했어요' 토스트+incrementUsed",
+        "read 중 Skeleton, ScreenScaffold+SubmitFooter 하단 고정 display='block' 버튼 ≥44px"
+      ]
+    },
+    "covers": [
+      "F3-AC1",
+      "F3-AC2",
+      "F3-AC3",
+      "F3-AC4",
+      "F3-AC5",
+      "F3-AC6",
+      "F3-AC7",
+      "F3-AC8"
+    ],
+    "files": [
+      "src/pages/PromptDetail.tsx"
+    ],
+    "definition_of_done": [
+      "없는 id 폴백 렌더 크래시 없음",
+      "광고 게이트·복사·incrementUsed 동작",
+      "data-testid 계약 준수, tsc 통과"
+    ],
+    "depends_on": [
+      "0004"
+    ],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "Pattern: FixedBottomCTA(Hero 가격 + 잠금 콘텐츠 + 하단 고정 액션). Whitelist: Top, SummaryHero, Amount, Badge, Paragraph, ListRow, Spacing, Border, Button, SubmitFooter, Toast, TossRewardAd, ScreenScaffold, EmptyState, Skeleton.\nLayout:\n<ScreenScaffold>\n <Top title={<Top.TitleParagraph>{p.title}</Top.TitleParagraph>} />\n {/* data-testid=\"prompt-detail-card\" */}\n <SummaryHero label={`${p.jobRole} · v${p.version} · 사용 ${p.usedCount}회`} value={<Amount value={p.priceWon} unit=\"원\" typography=\"t2\" />} caption={p.category} /> {/* data-testid=\"price-hero\", 무료면 '무료' Badge */}\n <Spacing size={20} /><Paragraph.Text typography=\"t4\">샘플 결과</Paragraph.Text><Spacing size={12} />\n {sampleUnlocked ? <Paragraph.Text typography=\"st11\">{p.sampleOutput}</Paragraph.Text> : <TossRewardAd slotId={import.meta.env.VITE_TOSS_AD_SLOT_ID}><Button variant=\"weak\" size=\"medium\">샘플 결과 보기</Button></TossRewardAd>}\n <Spacing size={24} /><Border /><Spacing size={16} />\n <Paragraph.Text typography=\"t4\">프롬프트 본문</Paragraph.Text>\n <Paragraph.Text typography=\"st11\" style={locked?{filter:'blur(6px)'}:undefined}>{p.body}</Paragraph.Text>\n</ScreenScaffold>\n<SubmitFooter> 무료/구매 시 <Button variant=\"fill\" size=\"large\" onClick={copy}>프롬프트 복사</Button>, 유료 미구매 시 '구매하고 전체 보기' 버튼(다음 패킷에서 TossPurchase 연결) </SubmitFooter>\nStates: Loading=Skeleton 히어로+본문; Empty(잘못된 id)=<EmptyState title=\"프롬프트를 찾을 수 없어요\" action={<Button variant=\"weak\" onClick={()=>navigate('/')}>마켓으로</Button>} />; Error(광고 실패)=Toast '광고를 불러오지 못했어요' sampleOutput 가림 유지.\nInteractions: 복사→setClipboardText(body)+incrementUsed(id)+Toast '복사했어요'+generateHapticFeedback({type:'success'}). HEX 금지, var(--tds-color-*)."
+  },
+  {
+    "id": "0007",
+    "title": "프롬프트 상세 — 구매(IAP)·정산 기록 연동",
+    "epic": "Epic 3. Pages",
+    "task": {
+      "description": "상세 화면에 TossPurchase 결제, 구매/판매 기록, 잠금 해제 로직을 추가한다(0006 확장). 결제 성공 시 addPurchase+recordSale, 취소 시 미기록, 이미 구매 시 '구매함'과 본문 전체 노출을 처리한다.",
+      "acceptance_criteria": [
+        "priceWon>0&미구매 시 <TossPurchase sku={import.meta.env.VITE_TOSS_IAP_SKU} processProductGrant onPurchased/> 노출; grant에서 addPurchase(id,priceWon)+recordSale(prompt)(3000→commission600/net2400) 기록 후 '구매 완료' 토스트",
+        "결제 취소/onError 시 Purchase·SaleRecord 미기록 + '결제가 취소되었어요' 토스트",
+        "pp.purchases에 이미 있으면 TossPurchase 미렌더+'구매함' 표시+본문 전체 노출, 버튼은 '프롬프트 복사'로 대체",
+        "priceWon=0이면 TossPurchase 미노출, '무료' 배지+즉시 복사 버튼만",
+        "코드에 Stripe/window.open/외부 결제 링크 없음"
+      ]
+    },
+    "covers": [
+      "F4-AC1",
+      "F4-AC2",
+      "F4-AC3",
+      "F4-AC4",
+      "F4-AC5",
+      "F4-AC6",
+      "F4-AC7"
+    ],
+    "files": [
+      "src/pages/PromptDetail.tsx"
+    ],
+    "definition_of_done": [
+      "결제 성공→구매/정산 기록·잠금 해제",
+      "중복 구매 방지·취소 미기록",
+      "외부 결제 코드 없음, tsc 통과"
+    ],
+    "depends_on": [
+      "0006"
+    ],
+    "db_schema": "pp.purchases += {promptId, pricePaidWon, purchasedAt}; pp.sales += SaleRecord(commission=floor(gross*0.2))",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "SubmitFooter 하단 고정 분기: p.priceWon===0||purchased ? <Button variant=\"fill\" size=\"large\" onClick={copy}>프롬프트 복사</Button> : bought ? <Button variant=\"weak\" size=\"large\" disabled>구매함</Button> : <TossPurchase sku={import.meta.env.VITE_TOSS_IAP_SKU} processProductGrant={grant} onPurchased={onPurchased} />. Interactions: 결제 성공→Purchase/SaleRecord 기록 후 잠금 해제, Toast '구매를 완료했어요'; 결제 취소→Toast '결제를 취소했어요' 미기록. 템플릿 TossPurchase 컴포넌트만 사용, Stripe/외부 PG 금지."
+  },
+  {
+    "id": "0008",
+    "title": "판매 등록 페이지 `/sell`",
+    "epic": "Epic 3. Pages",
+    "task": {
+      "description": "판매자 프롬프트 등록 폼 + 필드별 유효성 + 최초 진입 온보딩 다이얼로그. 통과 시 savePrompt 후 상세로 이동한다. 저장 중 중복 제출을 차단하고 외부 앱 설치 유도 문구를 넣지 않는다.",
+      "acceptance_criteria": [
+        "TextField(제목/직무/본문 멀티라인/샘플출력/가격)+Tab/Chip 카테고리, ScreenScaffold+SubmitFooter '등록하기' display='block'",
+        "유효성 인라인·미저장: 빈 제목→'제목을 입력해주세요'; body<20자→'프롬프트 본문은 20자 이상이어야 해요'; priceWon이 0도 1000~50000도 아니면→'가격은 0원 또는 1,000~50,000원이어야 해요'",
+        "통과 시 savePrompt(version=1,usedCount=0) 후 성공 토스트→navigate('/prompt/'+newId)",
+        "pp.flags.onboardedSeller 없으면 최초 진입 시 AlertDialog '수수료 20%가 차감되어 정산돼요' 1회, 확인 시 setOnboardedSeller()",
+        "저장 중 '등록하기' 로딩/비활성 중복 제출 차단; 앱 설치/외부 링크 문구 없음"
+      ]
+    },
+    "covers": [
+      "F5-AC1",
+      "F5-AC2",
+      "F5-AC3",
+      "F5-AC4",
+      "F5-AC5",
+      "F5-AC6",
+      "F5-AC7",
+      "F5-AC8"
+    ],
+    "files": [
+      "src/pages/SellPrompt.tsx"
+    ],
+    "definition_of_done": [
+      "필드별 유효성 인라인 표시",
+      "온보딩 다이얼로그 1회",
+      "savePrompt 후 이동, tsc 통과"
+    ],
+    "depends_on": [
+      "0004"
+    ],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "Pattern: FixedBottomCTA(폼 + 하단 고정 등록). Whitelist: Top, TextField, Tab, Tab.Item, Paragraph, Spacing, Button, SubmitFooter, AlertDialog, AlertDialog.AlertButton, Toast, ScreenScaffold, FloatingTabBar.\nLayout:\n<ScreenScaffold>\n <Top title={<Top.TitleParagraph>프롬프트 등록</Top.TitleParagraph>} />\n <Spacing size={16} />\n <TextField variant=\"box\" label=\"제목\" value={title} onChange={setTitle} hasError={!!errTitle} help={errTitle} />\n <Spacing size={12} /><Paragraph.Text typography=\"t6\">카테고리</Paragraph.Text>\n <Tab onChange={setCat}> 8종 Tab.Item selected </Tab>\n <Spacing size={12} /><TextField variant=\"box\" label=\"직무\" value={jobRole} onChange={setJobRole} />\n <Spacing size={12} /><TextField variant=\"box\" label=\"프롬프트 본문 (20자 이상)\" value={body} onChange={setBody} hasError={!!errBody} help={errBody} /> (멀티라인)\n <Spacing size={12} /><TextField 샘플출력, 가격(숫자)>\n</ScreenScaffold>\n<SubmitFooter><Button variant=\"fill\" size=\"large\" display=\"block\" loading={saving} onClick={submit}>등록하기</Button></SubmitFooter>\nStates: 유효성 실패 시 필드 hasError+help 인라인, 미저장. 온보딩 AlertDialog: AlertDialog.AlertButton 확인. Interactions: 성공 토스트 후 navigate. 왼쪽 버튼 라벨 '닫기'. HEX 금지."
+  },
+  {
+    "id": "0009",
+    "title": "정산 대시보드 페이지 `/dashboard`",
+    "epic": "Epic 3. Pages",
+    "task": {
+      "description": "판매 집계 히어로 + netWon 추이 Sparkline + 최근 내역 리스트 + 빈 상태를 렌더한다. getSales() 로드 후 순수익 합계·건수·총매출·수수료를 표시하고 빈 배열에서도 크래시 없이 '0원'을 표시한다.",
+      "acceptance_criteria": [
+        "getSales() 로드 후 순수익 합계(예 2400+4000→'6,400원')·판매 건수·총매출·수수료 표시",
+        "data-testid='net-hero' SummaryHero가 순수익 CountUp t2~t3 강조, Card로 묶임",
+        "판매 ≥2건 시 최근 netWon 추이 Sparkline 표시",
+        "빈 배열 시 Asset.ContentIcon+'아직 판매 내역이 없어요', 히어로 '0원', 크래시 없음",
+        "내역 TDS ListRow로 promptTitle·netWon·판매일 최신순(≥44px), read 중 Skeleton, 색상 var(--tds-color-*)만 #RRGGBB 없음"
+      ]
+    },
+    "covers": [
+      "F6-AC1",
+      "F6-AC2",
+      "F6-AC3",
+      "F6-AC4",
+      "F6-AC5",
+      "F6-AC6",
+      "F6-AC7"
+    ],
+    "files": [
+      "src/pages/Dashboard.tsx"
+    ],
+    "definition_of_done": [
+      "순수익/건수/매출/수수료 집계 정확",
+      "빈 상태·Skeleton 처리",
+      "HEX 리터럴 없음, tsc 통과"
+    ],
+    "depends_on": [
+      "0004"
+    ],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "Pattern: SummaryHero 집계 + 추이 + 내역 리스트. Whitelist: Top, SummaryHero, Amount, Paragraph, ListRow, ListRow.Texts, Spacing, Skeleton, EmptyState, Asset.ContentIcon, FloatingTabBar.\nLayout:\n<Top title={<Top.TitleParagraph>정산</Top.TitleParagraph>} />\n<Spacing size={12} />\n{/* data-testid=\"net-hero\" Card로 묶인 SummaryHero, 순수익 Amount CountUp typography t2~t3 */}\n<SummaryHero label=\"총 순수익\" value={<Amount value={netTotal} unit=\"원\" typography=\"t2\" />} caption={`판매 ${count}건 · 총매출 ${gross.toLocaleString()}원 · 수수료 ${commission.toLocaleString()}원`} />\n<Spacing size={16} /> 판매 ≥2건 시 netWon 추이 Sparkline\n<Spacing size={16} /> 최근 내역: <ListRow contents={<ListRow.Texts type=\"2RowTypeA\" top={s.promptTitle} bottom={dateStr} />} right={<Amount value={s.netWon} unit=\"원\" />} /> 최신순 정렬\n<FloatingTabBar active=\"settlement\" />\nStates: Empty=Asset.ContentIcon+<EmptyState title=\"아직 판매 내역이 없어요\" /> 히어로 '0원'; Loading=Skeleton 카드+리스트. 색상 var(--tds-color-*)/TDS만, HEX 금지, ListRow ≥44px."
+  },
+  {
+    "id": "0010",
+    "title": "내 라이브러리 페이지 `/library`",
+    "epic": "Epic 3. Pages",
+    "task": {
+      "description": "구매/무료 확보 프롬프트 목록 + 버전/사용 통계 + 빈 상태 + 삭제된 원본 상태를 렌더한다. getPurchases() 기준 promptId를 getPromptById로 조인하고, 원본이 없으면 크래시 없이 '삭제된 프롬프트' 카드로 표시한다.",
+      "acceptance_criteria": [
+        "getPurchases() 기준 각 promptId를 getPromptById로 조인해 ListRow 카드로 표시, v{version}·'사용 {usedCount}회' 표시",
+        "카드 탭(≥44px)→navigate('/prompt/'+id)",
+        "빈 배열 시 Asset.ContentIcon+'구매한 프롬프트가 없어요'+'마켓 둘러보기'(→'/')",
+        "원본이 pp.prompts에 없으면 '삭제된 프롬프트' 라벨 카드로 표시 & 탭 시 이동 안 함, 크래시 없음",
+        "read 중 Skeleton 리스트, purchasedAt desc 정렬"
+      ]
+    },
+    "covers": [
+      "F7-AC1",
+      "F7-AC2",
+      "F7-AC3",
+      "F7-AC4",
+      "F7-AC5",
+      "F7-AC6"
+    ],
+    "files": [
+      "src/pages/Library.tsx"
+    ],
+    "definition_of_done": [
+      "구매 목록 조인 렌더",
+      "삭제 원본 폴백 크래시 없음",
+      "빈 상태·Skeleton, tsc 통과"
+    ],
+    "depends_on": [
+      "0004"
+    ],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "Pattern: 구매 보관함 리스트. Whitelist: Top, ListRow, ListRow.Texts, Badge, Paragraph, Spacing, Skeleton, EmptyState, Asset.ContentIcon, Button, FloatingTabBar.\nLayout:\n<Top title={<Top.TitleParagraph>내 라이브러리</Top.TitleParagraph>} />\n<Spacing size={12} />\n리스트: getPurchases() purchasedAt desc → getPromptById(promptId) 조인. 원본 있으면 <ListRow onClick={()=>navigate(`/prompt/${p.id}`)} contents={<ListRow.Texts type=\"2RowTypeA\" top={p.title} bottom={`v${p.version} · 사용 ${p.usedCount}회`} />} right={<Badge>{p.category}</Badge>} />; 원본 없으면 <ListRow contents={<ListRow.Texts type=\"2RowTypeA\" top=\"삭제된 프롬프트\" bottom=\"원본을 찾을 수 없어요\" />} /> 탭 이동 없음.\n<FloatingTabBar active=\"library\" />\nStates: Empty=Asset.ContentIcon+<EmptyState title=\"구매한 프롬프트가 없어요\" action={<Button variant=\"weak\" onClick={()=>navigate('/')}>마켓 둘러보기</Button>} />; Loading=Skeleton 리스트. ListRow ≥44px, HEX 금지."
+  },
+  {
+    "id": "0011",
+    "title": "라우팅 배선 · 탭 네비 · 진입점 통합",
+    "epic": "4",
+    "task": {
+      "description": "react-router-dom 라우터에 5개 페이지를 연결하고 FloatingTabBar(마켓/라이브러리/판매/정산)를 배선하며, 앱 마운트 시 ensureSeeded()를 1회 실행한다. 미매칭 경로는 '/'로 리다이렉트하고 새로고침/직접 URL 진입에서도 크래시 없이 렌더한다. main.tsx(@AI:ANCHOR)는 수정하지 않는다.",
+      "acceptance_criteria": [
+        "<Routes>에 '/', '/prompt/:id', '/sell', '/dashboard', '/library' 라우트 등록, 미매칭 경로는 '/'로 리다이렉트",
+        "App 마운트 최상단에서 ensureSeeded() 1회 호출 후 홈에 시드 카드 렌더",
+        "FloatingTabBar 4탭(마켓→'/', 라이브러리→'/library', 판매→'/sell', 정산→'/dashboard') 연결, 현재 경로 활성 표시",
+        "npm run build 성공, 프로덕션 경로에서 console.error 0건",
+        "새로고침/직접 URL 진입 시 5개 라우트 모두 크래시 없이 렌더"
+      ]
+    },
+    "covers": [
+      "F1-AC1",
+      "F1-AC7"
+    ],
+    "files": [
+      "src/App.tsx"
+    ],
+    "definition_of_done": [
+      "5개 라우트 연결·미매칭 리다이렉트",
+      "ensureSeeded 부팅 1회",
+      "FloatingTabBar 활성 표시, build 성공 console.error 0"
+    ],
+    "depends_on": [
+      "0005",
+      "0006",
+      "0007",
+      "0008",
+      "0009",
+      "0010"
+    ],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [
+      "react-router-dom"
+    ],
+    "ui_requirements": "App.tsx 단일 진입점 소유. <BrowserRouter><Routes> 5개 Route + 미매칭 <Navigate to='/' />. 마운트 시 ensureSeeded() 동기 1회 호출. 템플릿 src/components/FloatingTabBar를 4탭(마켓/라이브러리/판매/정산)에 연결, useLocation으로 현재 경로 활성 틴트. main.tsx는 files에 넣지 않고 수정 금지."
+  }
+]
