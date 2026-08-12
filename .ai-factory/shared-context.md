@@ -189,3 +189,4 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0005: 마켓 홈 페이지 `/` (files: src/pages/MarketHome.tsx)
 - 0006: 프롬프트 상세 — 렌더·샘플 광고 게이트·복사 (files: src/pages/PromptDetail.tsx)
 - 0008: 판매 등록 페이지 `/sell` (files: src/pages/SellPrompt.tsx)
+- 0007: 프롬프트 상세 — 구매(IAP)·정산 기록 연동 (files: src/pages/PromptDetail.tsx)
