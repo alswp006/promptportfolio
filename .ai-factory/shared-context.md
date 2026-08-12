@@ -136,6 +136,9 @@ export type RouteState = {
   main.tsx
   pages/
     Home.tsx
+    MarketHome.tsx
+    PromptDetail.tsx
+    SellPrompt.tsx
   styles/
     globals.css
     reward-ad.css
@@ -173,6 +176,9 @@ export type RouteState = {
   lib/purchaseStore.ts → imports: lib/types, lib/storage
   lib/seed.ts → imports: lib/types, lib/storage
   lib/settlement.ts → imports: lib/types, lib/storage
+  pages/MarketHome.tsx → imports: components/ScreenScaffold, components/AdSlot, components/StateView, lib/promptStore, lib/utils, lib/types
+  pages/PromptDetail.tsx → imports: components/ScreenScaffold, components/Card, components/BottomCTA, components/StateView, lib/promptStore, lib/purchaseStore, lib/settlement, lib/utils, lib/types
+  pages/SellPrompt.tsx → imports: components/ScreenScaffold, components/BottomCTA, lib/promptStore, lib/settlement, lib/types
 CRITICAL: Before creating any new function, type, or component, check the list above. If something similar exists, import and use it.
 
 ## Already Implemented (do NOT duplicate or overwrite)
@@ -182,3 +188,4 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0004: 구매·정산·사용횟수 store + 정산 계산 (files: src/lib/purchaseStore.ts, src/lib/settlement.ts)
 - 0005: 마켓 홈 페이지 `/` (files: src/pages/MarketHome.tsx)
 - 0006: 프롬프트 상세 — 렌더·샘플 광고 게이트·복사 (files: src/pages/PromptDetail.tsx)
+- 0008: 판매 등록 페이지 `/sell` (files: src/pages/SellPrompt.tsx)
