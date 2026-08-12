@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Top, TextField, Chip, ListRow, Badge, Asset, Spacing } from "@toss/tds-mobile";
+import { Top, TextField, Chip, ChipItem, ListRow, Badge, Asset, Spacing } from "@toss/tds-mobile";
 import { generateHapticFeedback } from "@apps-in-toss/web-framework";
 import { ScreenScaffold } from "@/components/ScreenScaffold";
 import { AdSlot } from "@/components/AdSlot";
@@ -72,13 +72,13 @@ export default function MarketHome() {
 
       {/* 카테고리 필터 — Chip 가로 스크롤. 하단 FloatingTabBar(role="tab")와 역할이
           겹치지 않도록 상단 콘텐츠 필터는 Chip으로 둔다(spec S3: "Tab 또는 Chip"). */}
-      <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
+      <Chip kind="select" wrap={false} style={{ overflowX: "auto", paddingBottom: 4 }}>
         {TABS.map((tab) => (
-          <Chip key={tab} selected={category === tab} onClick={() => handleSelectTab(tab)}>
+          <ChipItem key={tab} selected={category === tab} onClick={() => handleSelectTab(tab)}>
             {tab}
-          </Chip>
+          </ChipItem>
         ))}
-      </div>
+      </Chip>
 
       <Spacing size={16} />
 
