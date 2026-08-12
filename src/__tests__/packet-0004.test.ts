@@ -11,9 +11,7 @@ import type { Prompt, Purchase, SaleRecord } from "@/lib/types";
 // These imports will fail until the implementations are written — that's intentional (TDD).
 // The Coder will create these files based on what these tests expect.
 import * as promptStore from "@/lib/promptStore";
-// @ts-expect-error - purchaseStore will be created by Coder
 import * as purchaseStore from "@/lib/purchaseStore";
-// @ts-expect-error - settlement will be created by Coder
 import * as settlement from "@/lib/settlement";
 import * as seed from "@/lib/seed";
 
