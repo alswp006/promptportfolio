@@ -14,8 +14,6 @@ import type { Prompt } from "@/lib/types";
 import { mockAll, mockNavigate } from "@/__tests__/__helpers__/mocks";
 import { renderWithRouter } from "@/__tests__/__helpers__/test-utils";
 
-// This import will fail until the implementation exists — that's intentional (TDD red phase).
-// @ts-expect-error - MarketHome will be created by Coder
 import MarketHome from "@/pages/MarketHome";
 
 mockAll();
@@ -64,7 +62,7 @@ function buildTwelvePrompts(): Prompt[] {
     makePrompt({ id: "p-legal-1", title: "계약서 리스크 검토", category: "법무", jobRole: "사내 변호사", priceWon: 15000, usedCount: 5 }),
     makePrompt({ id: "p-dev-1", title: "AI Prompt Toolkit", category: "개발", jobRole: "Backend Engineer", priceWon: 9900, usedCount: 12 }),
     makePrompt({ id: "p-dev-2", title: "코드 리뷰 체크리스트", category: "개발", jobRole: "시니어 엔지니어", priceWon: 4900, usedCount: 30 }),
-    makePrompt({ id: "p-design-1", title: "UI 카피 톤 가이드", category: "디자인", jobRole: "UI 디자이너", priceWon: 3000, usedCount: 15 }),
+    makePrompt({ id: "p-design-1", title: "UI 톤앤매너 가이드", category: "디자인", jobRole: "UI 디자이너", priceWon: 3000, usedCount: 15 }),
     makePrompt({ id: "p-hr-1", title: "채용 공고 초안 생성", category: "HR", jobRole: "HR 매니저", priceWon: 4000, usedCount: 2 }),
     makePrompt({ id: "p-etc-1", title: "이력서 첨삭 도우미", category: "기타", jobRole: "커리어 컨설턴트", priceWon: 2000, usedCount: 1 }),
   ];
