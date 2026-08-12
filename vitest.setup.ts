@@ -32,6 +32,6 @@ if (typeof globalThis.requestAnimationFrame !== "function") {
 
 // ── afterEach reset ──
 afterEach(() => {
-  vi.clearAllMocks();
+  vi.restoreAllMocks(); // clears mock state AND restores spied implementations (e.g. Storage.prototype.setItem)
   vi.useRealTimers(); // in case a test used fake timers
 });
