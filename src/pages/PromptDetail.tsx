@@ -120,7 +120,7 @@ export default function PromptDetail() {
 
   return (
     <ScreenScaffold
-      top={<Top title={<Top.TitleParagraph>{prompt.title}</Top.TitleParagraph>} />}
+      top={<Top title={<Top.TitleParagraph>{prompt.category}</Top.TitleParagraph>} />}
       bottom={
         locked ? (
           <div

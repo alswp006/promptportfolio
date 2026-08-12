@@ -3,17 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { Top, ListRow, Asset, Button, Spacing } from "@toss/tds-mobile";
 import { ScreenScaffold } from "@/components/ScreenScaffold";
 import { EmptyState, LoadingState } from "@/components/StateView";
-import { FloatingTabBar } from "@/components/FloatingTabBar";
 import { getPurchases } from "@/lib/purchaseStore";
 import { getPromptById } from "@/lib/promptStore";
 import type { Prompt, Purchase } from "@/lib/types";
-
-const TABS = [
-  { label: "마켓", path: "/" },
-  { label: "판매 등록", path: "/sell" },
-  { label: "정산", path: "/dashboard" },
-  { label: "보관함", path: "/library" },
-];
 
 type LibraryItem = {
   purchase: Purchase;
@@ -43,10 +35,7 @@ export default function Library() {
   }
 
   return (
-    <ScreenScaffold
-      top={<Top title={<Top.TitleParagraph>내 라이브러리</Top.TitleParagraph>} />}
-      bottom={<FloatingTabBar items={TABS} />}
-    >
+    <ScreenScaffold top={<Top title={<Top.TitleParagraph>내 라이브러리</Top.TitleParagraph>} />}>
       {items.length === 0 ? (
         <EmptyState
           icon={<Asset.ContentIcon name="illustBox" alt="구매한 프롬프트 없음" />}
@@ -92,7 +81,7 @@ export default function Library() {
         </div>
       )}
 
-      <Spacing size={24} />
+      <Spacing size={80} />
     </ScreenScaffold>
   );
 }

@@ -178,8 +178,8 @@ export type RouteState = {
   lib/purchaseStore.ts → imports: lib/types, lib/storage
   lib/seed.ts → imports: lib/types, lib/storage
   lib/settlement.ts → imports: lib/types, lib/storage
-  pages/Dashboard.tsx → imports: components/ScreenScaffold, components/Card, components/SummaryHero, components/Amount, components/CountUp, components/Sparkline, components/StateView, components/FloatingTabBar, lib/settlement, lib/types
-  pages/Library.tsx → imports: components/ScreenScaffold, components/StateView, components/FloatingTabBar, lib/purchaseStore, lib/promptStore, lib/types
+  pages/Dashboard.tsx → imports: components/ScreenScaffold, components/Card, components/SummaryHero, components/Amount, components/CountUp, components/Sparkline, components/StateView, lib/settlement, lib/types
+  pages/Library.tsx → imports: components/ScreenScaffold, components/StateView, lib/purchaseStore, lib/promptStore, lib/types
   pages/MarketHome.tsx → imports: components/ScreenScaffold, components/AdSlot, components/StateView, lib/promptStore, lib/utils, lib/types
   pages/PromptDetail.tsx → imports: components/ScreenScaffold, components/Card, components/BottomCTA, components/StateView, components/TossPurchase, lib/promptStore, lib/purchaseStore, lib/settlement, lib/utils, lib/types
   pages/SellPrompt.tsx → imports: components/ScreenScaffold, components/BottomCTA, lib/promptStore, lib/settlement, lib/types

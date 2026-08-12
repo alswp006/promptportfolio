@@ -7,16 +7,8 @@ import { Amount } from "@/components/Amount";
 import { CountUp } from "@/components/CountUp";
 import { Sparkline } from "@/components/Sparkline";
 import { EmptyState, LoadingState } from "@/components/StateView";
-import { FloatingTabBar } from "@/components/FloatingTabBar";
 import { getSales } from "@/lib/settlement";
 import type { SaleRecord } from "@/lib/types";
-
-const TABS = [
-  { label: "마켓", path: "/" },
-  { label: "판매 등록", path: "/sell" },
-  { label: "정산", path: "/dashboard" },
-  { label: "보관함", path: "/library" },
-];
 
 const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
   year: "numeric",
@@ -38,7 +30,7 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <ScreenScaffold top={<Top title={<Top.TitleParagraph>정산</Top.TitleParagraph>} />}>
+      <ScreenScaffold top={<Top title="정산" />}>
         <LoadingState rows={5} />
       </ScreenScaffold>
     );
@@ -52,10 +44,7 @@ export default function Dashboard() {
   const trend = [...sales].sort((a, b) => a.soldAt - b.soldAt).map((s) => s.netWon);
 
   return (
-    <ScreenScaffold
-      top={<Top title={<Top.TitleParagraph>정산</Top.TitleParagraph>} />}
-      bottom={<FloatingTabBar items={TABS} />}
-    >
+    <ScreenScaffold top={<Top title="정산" />}>
       <SummaryHero
         testId="net-hero"
         label="총 순수익"

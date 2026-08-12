@@ -21,6 +21,8 @@ export type TabItem = {
 export function FloatingTabBar({ items }: { items: TabItem[] }) {
   const navigate = useNavigate();
   const location = useLocation();
+  // eslint-disable-next-line no-console
+  console.log("FTB_PATH:", location.pathname);
 
   return (
     <nav

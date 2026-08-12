@@ -130,31 +130,33 @@ describe("Packet 0005: 마켓 홈 페이지 `/`", () => {
   // AC-2 [P0]: 카테고리 Tab 필터
   // ────────────────────────────────────────────────────────────────────────
 
-  describe("AC-2[P0]: 카테고리 Tab 필터", () => {
-    it("shows all 8 categories + '전체' as 9 tabs total", () => {
+  // 카테고리 필터는 Chip(role="button")으로 렌더한다 — 하단 FloatingTabBar(role="tab")와
+  // 역할 충돌을 피하려 통합 패킷(0011)에서 상단 필터를 Chip으로 정리했다. spec S3의 "Tab 또는 Chip" 허용.
+  describe("AC-2[P0]: 카테고리 Chip 필터", () => {
+    it("shows all 8 categories + '전체' as 9 chips total", () => {
       vi.useFakeTimers();
       seedPrompts(buildTwelvePrompts());
 
       renderWithRouter(React.createElement(MarketHome));
       flushLoading();
 
-      const tabs = screen.getAllByRole("tab");
-      expect(tabs.length).toBe(9);
+      const chips = screen.getAllByRole("button");
+      expect(chips.length).toBe(9);
       CATEGORIES.forEach((cat) => {
-        expect(screen.getByRole("tab", { name: cat })).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: cat })).toBeInTheDocument();
       });
 
       vi.useRealTimers();
     });
 
-    it("shows only category==='재무' prompts (3 of 12) when '재무' tab is clicked", () => {
+    it("shows only category==='재무' prompts (3 of 12) when '재무' chip is clicked", () => {
       vi.useFakeTimers();
       seedPrompts(buildTwelvePrompts());
 
       renderWithRouter(React.createElement(MarketHome));
       flushLoading();
 
-      fireEvent.click(screen.getByRole("tab", { name: "재무" }));
+      fireEvent.click(screen.getByRole("button", { name: "재무" }));
 
       const cards = screen.getAllByRole("listitem");
       expect(cards.length).toBe(3);
