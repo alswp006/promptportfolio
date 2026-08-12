@@ -310,9 +310,12 @@ describe("Packet 0003: 프롬프트 store + 시드 데이터", () => {
     it("should return error when localStorage quota exceeded (QuotaExceededError)", async () => {
       await seed.ensureSeeded();
 
-      // Mock localStorage.setItem to throw QuotaExceededError
-      const originalSetItem = localStorage.setItem;
-      localStorage.setItem = vi.fn(() => {
+      // Mock localStorage.setItem to throw QuotaExceededError.
+      // jsdom's localStorage is proxy-backed: assigning `localStorage.setItem = fn`
+      // directly on the instance is silently swallowed (stored as a key instead of
+      // overriding the method). Spying on Storage.prototype is the pattern that
+      // actually intercepts calls (see packet-0002.test.ts for the same mock).
+      const setItemSpy = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
         const err = new Error("QuotaExceededError") as any;
         err.name = "QuotaExceededError";
         throw err;
@@ -335,7 +338,7 @@ describe("Packet 0003: 프롬프트 store + 시드 데이터", () => {
       expect("error" in result && result.error).toBeTruthy();
 
       // Restore
-      localStorage.setItem = originalSetItem;
+      setItemSpy.mockRestore();
     });
   });
 

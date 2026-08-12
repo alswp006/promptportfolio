@@ -1,18 +1,19 @@
 /**
  * Prompt CRUD operations.
  * Reads and writes pp.prompts in localStorage.
- *
- * TDD Red phase: stubs only. Implementation will be written in Green phase.
  */
 
 import type { Prompt, SaveResult } from "@/lib/types";
+import { safeRead, safeWrite } from "@/lib/storage";
+
+const STORAGE_KEY = "pp.prompts";
 
 /**
  * Get all prompts from localStorage.
  * Returns empty array if pp.prompts is missing or corrupted.
  */
 export function getPrompts(): Prompt[] {
-  throw new Error("Not implemented: getPrompts()");
+  return safeRead<Prompt[]>(STORAGE_KEY, []);
 }
 
 /**
@@ -20,7 +21,7 @@ export function getPrompts(): Prompt[] {
  * Returns undefined if not found.
  */
 export function getPromptById(id: string): Prompt | undefined {
-  throw new Error("Not implemented: getPromptById()");
+  return getPrompts().find((p) => p.id === id);
 }
 
 /**
@@ -33,5 +34,21 @@ export function getPromptById(id: string): Prompt | undefined {
 export function savePrompt(
   input: Omit<Prompt, "id" | "version" | "usedCount" | "createdAt" | "updatedAt">,
 ): SaveResult {
-  throw new Error("Not implemented: savePrompt()");
+  const now = Date.now();
+  const prompt: Prompt = {
+    ...input,
+    id: crypto.randomUUID(),
+    version: 1,
+    usedCount: 0,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  const prompts = getPrompts();
+  const result = safeWrite(STORAGE_KEY, [...prompts, prompt]);
+
+  if (!result.ok) {
+    return { ok: false, error: result.error ?? "저장에 실패했습니다" };
+  }
+  return { ok: true, id: prompt.id };
 }
