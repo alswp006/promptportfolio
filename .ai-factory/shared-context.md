@@ -135,7 +135,9 @@ export type RouteState = {
     utils.ts
   main.tsx
   pages/
+    Dashboard.tsx
     Home.tsx
+    Library.tsx
     MarketHome.tsx
     PromptDetail.tsx
     SellPrompt.tsx
@@ -176,8 +178,10 @@ export type RouteState = {
   lib/purchaseStore.ts → imports: lib/types, lib/storage
   lib/seed.ts → imports: lib/types, lib/storage
   lib/settlement.ts → imports: lib/types, lib/storage
+  pages/Dashboard.tsx → imports: components/ScreenScaffold, components/Card, components/SummaryHero, components/Amount, components/CountUp, components/Sparkline, components/StateView, components/FloatingTabBar, lib/settlement, lib/types
+  pages/Library.tsx → imports: components/ScreenScaffold, components/StateView, components/FloatingTabBar, lib/purchaseStore, lib/promptStore, lib/types
   pages/MarketHome.tsx → imports: components/ScreenScaffold, components/AdSlot, components/StateView, lib/promptStore, lib/utils, lib/types
-  pages/PromptDetail.tsx → imports: components/ScreenScaffold, components/Card, components/BottomCTA, components/StateView, lib/promptStore, lib/purchaseStore, lib/settlement, lib/utils, lib/types
+  pages/PromptDetail.tsx → imports: components/ScreenScaffold, components/Card, components/BottomCTA, components/StateView, components/TossPurchase, lib/promptStore, lib/purchaseStore, lib/settlement, lib/utils, lib/types
   pages/SellPrompt.tsx → imports: components/ScreenScaffold, components/BottomCTA, lib/promptStore, lib/settlement, lib/types
 CRITICAL: Before creating any new function, type, or component, check the list above. If something similar exists, import and use it.
 
@@ -191,3 +195,4 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0008: 판매 등록 페이지 `/sell` (files: src/pages/SellPrompt.tsx)
 - 0007: 프롬프트 상세 — 구매(IAP)·정산 기록 연동 (files: src/pages/PromptDetail.tsx)
 - 0009: 정산 대시보드 페이지 `/dashboard` (files: src/pages/Dashboard.tsx)
+- 0010: 내 라이브러리 페이지 `/library` (files: src/pages/Library.tsx)
