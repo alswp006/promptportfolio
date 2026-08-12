@@ -180,3 +180,4 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0002: 저장소 기반 헬퍼 (안전 read/write) (files: src/lib/storage.ts)
 - 0003: 프롬프트 store + 시드 데이터 (files: src/lib/promptStore.ts, src/lib/seed.ts)
 - 0004: 구매·정산·사용횟수 store + 정산 계산 (files: src/lib/purchaseStore.ts, src/lib/settlement.ts)
+- 0005: 마켓 홈 페이지 `/` (files: src/pages/MarketHome.tsx)
