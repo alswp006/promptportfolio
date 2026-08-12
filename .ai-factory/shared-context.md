@@ -181,3 +181,4 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0003: 프롬프트 store + 시드 데이터 (files: src/lib/promptStore.ts, src/lib/seed.ts)
 - 0004: 구매·정산·사용횟수 store + 정산 계산 (files: src/lib/purchaseStore.ts, src/lib/settlement.ts)
 - 0005: 마켓 홈 페이지 `/` (files: src/pages/MarketHome.tsx)
+- 0006: 프롬프트 상세 — 렌더·샘플 광고 게이트·복사 (files: src/pages/PromptDetail.tsx)
