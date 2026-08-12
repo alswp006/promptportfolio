@@ -1,16 +1,23 @@
-export function getItem<T>(key: string): T | null {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
+export interface SaveResult {
+  ok: boolean;
+  error?: string;
 }
 
-export function setItem<T>(key: string, value: T): void {
-  localStorage.setItem(key, JSON.stringify(value));
+/**
+ * Safely reads a value from localStorage and parses it as JSON.
+ * Returns the fallback value if the key doesn't exist or JSON parsing fails.
+ * Never throws or logs errors.
+ */
+export function safeRead<T>(key: string, fallback: T): T {
+  throw new Error("Not implemented");
 }
 
-export function removeItem(key: string): void {
-  localStorage.removeItem(key);
+/**
+ * Safely writes a value to localStorage as JSON.
+ * Returns {ok: true} on success.
+ * Returns {ok: false, error: string} on QuotaExceededError.
+ * Never throws or logs errors.
+ */
+export function safeWrite(key: string, value: unknown): SaveResult {
+  throw new Error("Not implemented");
 }

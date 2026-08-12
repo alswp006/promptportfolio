@@ -53,7 +53,113 @@ export type calculateRevenueFn = (purchases: PurchaseRecord[]) => number;
 
 ## Shared Types Contract (IMPORT these, do NOT redefine)
 ```typescript
-// Domain types — add your app-specific types here
-export {};
+export type PromptCategory = "마케팅" | "재무" | "PM" | "법무" | "개발" | "디자인" | "HR" | "기타";
+
+export interface Prompt {
+  id: string;
+  title: string;
+  category: PromptCategory;
+  jobRole: string;
+  body: string;
+  sampleOutput: string;
+  priceWon: number;
+  sellerId: string;
+  sellerName: string;
+  version: number;
+  usedCount: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface Purchase {
+  promptId: string;
+  pricePaidWon: number;
+  purchasedAt: number;
+}
+
+export interface SaleRecord {
+  id: string;
+  promptId: string;
+  promptTitle: string;
+  grossWon: number;
+  commissionWon: number;
+  netWon: number;
+  soldAt: number;
+}
+
+export type UsedCounts = Record<string, number>;
+
+export interface Flags {
+  onboardedSeller?: boolean;
+}
+
+export type SaveResult = { ok: true; id: string } | { ok: false; error: string };
+
+export type RouteState = {
+  "/": undefined;
+  "/prompt/:id": undefined;
+  "/sell": undefined;
+  "/dashboard": undefined;
+  "/library": undefined;
+};
 
 ```
+
+## Existing Codebase (import and use these — do NOT recreate)
+### File Tree (src/)
+  App.tsx
+  components/
+    AdSlot.tsx
+    Amount.tsx
+    BottomCTA.tsx
+    Card.tsx
+    CountUp.tsx
+    FloatingTabBar.tsx
+    MiniBar.tsx
+    PageShell.tsx
+    ScreenScaffold.tsx
+    Sparkline.tsx
+    StateView.tsx
+    SummaryHero.tsx
+    TossPurchase.tsx
+    TossRewardAd.tsx
+  hooks/
+  lib/
+    contract.ts
+    storage.ts
+    types.ts
+    utils.ts
+  main.tsx
+  pages/
+    Home.tsx
+  styles/
+    globals.css
+    reward-ad.css
+  types/
+  vite-env.d.ts
+
+### Exports (src/lib/)
+- contract.ts: export type Prompt =; export type PurchaseRecord =; export type SettlementRecord =; export type User =; export type RouteState =; export type usePromptStoreFn = () =>; export type usePurchaseStoreFn = () =>; export type useSettlementStoreFn = () =>
+- storage.ts: export function getItem<T>(key: string): T | null; export function setItem<T>(key: string, value: T): void; export function removeItem(key: string): void
+- types.ts: export type PromptCategory = "마케팅" | "재무" | "PM" | "법무" | "개발" | "디자인" | "HR" | "기타"; export interface Prompt; export interface Purchase; export interface SaleRecord; export type UsedCounts = Record<string, number>; export interface Flags; export type SaveResult =; export type RouteState =
+- utils.ts: export function cn(...classes: (string | boolean | undefined | null)[]): string; export function formatNumber(n: number): string; export function formatCurrency(n: number, currency = 'KRW'): string
+
+### Components (src/components/)
+- AdSlot.tsx: AdSlot
+- Amount.tsx: Amount
+- BottomCTA.tsx: SubmitFooter, ButtonStack
+- Card.tsx: Card
+- CountUp.tsx: CountUp
+- FloatingTabBar.tsx: FloatingTabBar
+- MiniBar.tsx: MiniBar
+- PageShell.tsx: PageShell
+- ScreenScaffold.tsx: ScreenScaffold
+- Sparkline.tsx: Sparkline
+- StateView.tsx: EmptyState, LoadingState
+- SummaryHero.tsx: SummaryHero
+- TossPurchase.tsx: TossPurchase
+- TossRewardAd.tsx: TossRewardAd
+CRITICAL: Before creating any new function, type, or component, check the list above. If something similar exists, import and use it.
+
+## Already Implemented (do NOT duplicate or overwrite)
+- 0001: 데이터 모델 & RouteState 타입 정의 (files: src/lib/types.ts)
